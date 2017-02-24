@@ -12,6 +12,8 @@ const {runServer, app, closeServer} = require('../server');
 
 const {TESTS_DATABASE_URL} = require('../config');
 
+chai.use(chaiHttp);
+
 function generateBlog(){
 	return {
 		title: faker.lorem.sentence(),
@@ -29,7 +31,7 @@ function addXblogsToDb(x){
 		blogs.push(generateBlog());
 	}
 	return BlogPost.insertMany(blogs);
-}
+};
 
 // run this function ONCE when `mocha` is invoked
 before(() => {
@@ -52,17 +54,38 @@ after(() => {
 });
 
 
-describe('test', () => {
-	it('creates one post', () => {
+describe('Get endpoint', () => {
+
+	it('should return all blogposts', () => {
+		let res;
+		return chai.request(app)
+    .get('/posts')
+		.then(function (_res) { //why is it _res?????
+			res = _res;
+			res.should.have.status(200);
+			res.body.should.have.length.of.at.least(10);
+			return BlogPost.count()
+		})
+		.then(function(count) {
+			res.body.should.have.length.of(count);
+		});
 		// create a post
-	})
-	
-	it('just a test', () => {
-		return BlogPost.count()
-			.then(count => count.should.eq(10));
 	});
 });
 
-describe();
-describe();
+describe('POST endpoint', function() {
 
+ it('should add a new blogpost', function () {
+	 const newBlog = generateBlog();
+	 return chai.request(app)
+	 .post('/posts')
+	 .send(newBlog)
+	 .then(function(res) {
+		 res.should.have.status(201);
+		 res.should.be.json;
+		 res.body.should.be.a('object');
+		 res.body.should.include.keys(
+			 'title', 'content', 'author');
+		 });
+	 });
+ });
